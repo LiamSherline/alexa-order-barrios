@@ -1,0 +1,2 @@
+# Pinned 2026-10-02. Local-first: no AWS SDK, no boto3.
+mcp==1.9.4
