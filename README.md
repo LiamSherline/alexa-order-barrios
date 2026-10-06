@@ -7,7 +7,7 @@ this repo is the self-hosted MCP server behind it.
 
 ## What it does
 
-Five tools:
+Six tools:
 
 | Tool | What it does |
 |---|---|
@@ -16,6 +16,23 @@ Five tools:
 | `get_order_status` | Looks up an order by id: items, total, customer, status |
 | `save_regular` | Remembers a customer's usual order ("my regular"), keyed by phone number |
 | `order_regular` | Replays the saved regular as a brand-new order ("order the regular") |
+| `get_recommendations` | AI dish suggestions via AWS Bedrock ("spicy", "vegetarian") |
+
+## AWS integration (Builder mini-challenge)
+
+`get_recommendations` calls Amazon Bedrock (Claude 3 Haiku) to suggest
+dishes from the real menu based on a free-text preference. The Bedrock
+client lives in `adapters/bedrock_agent.py`; core modules never import
+boto3. Setup:
+
+```bash
+.venv/bin/pip install boto3
+export AWS_REGION=us-east-2
+# credentials via standard AWS chain (env, ~/.aws/credentials, IAM role)
+```
+
+Each recommendation returns a real `item_id` you can pass straight to
+`place_order`.
 
 Menu data is the real menu from barriosoakridge.com (scraped 2026-10-02).
 Prices are integers (cents). Locked facts: queso 4oz $3.50 / 8oz $7.00 /
