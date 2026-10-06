@@ -7,13 +7,15 @@ this repo is the self-hosted MCP server behind it.
 
 ## What it does
 
-Three tools:
+Five tools:
 
 | Tool | What it does |
 |---|---|
 | `get_menu` | Full Barrios menu with prices (in cents) |
 | `place_order` | Validates items against the menu, computes the total, persists the order with status `received` |
 | `get_order_status` | Looks up an order by id: items, total, customer, status |
+| `save_regular` | Remembers a customer's usual order ("my regular"), keyed by phone number |
+| `order_regular` | Replays the saved regular as a brand-new order ("order the regular") |
 
 Menu data is the real menu from barriosoakridge.com (scraped 2026-10-02).
 Prices are integers (cents). Locked facts: queso 4oz $3.50 / 8oz $7.00 /
@@ -35,6 +37,17 @@ Orders persist to `./data/orders.db` (SQLite). Override with `BARRIOS_DB`:
 ```bash
 BARRIOS_DB=/tmp/test.db .venv/bin/python server.py
 ```
+
+## Transports
+
+| Transport | How | Use for |
+|---|---|---|
+| `stdio` (default) | `.venv/bin/python server.py` | MCP Inspector, local clients |
+| `streamable-http` | `BARRIOS_TRANSPORT=streamable-http BARRIOS_PORT=8000 .venv/bin/python server.py` | Remote hosting, Alexa+ skill host |
+| `sse` | `BARRIOS_TRANSPORT=sse .venv/bin/python server.py` | Legacy clients |
+
+Streamable HTTP serves the MCP endpoint at `/mcp/` (verified end to end:
+initialize, tools/list, tools/call all working over HTTP/SSE).
 
 ## Test each tool
 
