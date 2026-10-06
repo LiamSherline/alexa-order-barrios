@@ -198,6 +198,19 @@ def get_order_status(order_id: str) -> dict:
     return order
 
 
+@mcp.tool()
+def get_recommendations(preference: str, count: int = 3) -> dict:
+    """Get AI-powered dish recommendations via AWS Bedrock.
+
+    Give a preference like "spicy", "vegetarian", or "something light"
+    and Bedrock suggests matching dishes from the real Barrios menu.
+    Each recommendation includes an item_id you can pass to place_order.
+    """
+    from adapters import bedrock_agent
+
+    return bedrock_agent.get_recommendations(preference, count)
+
+
 if __name__ == "__main__":
     # Transport selectable via BARRIOS_TRANSPORT env var:
     #   stdio (default) - for MCP clients (inspector, local testing)
