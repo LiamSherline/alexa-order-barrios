@@ -54,8 +54,16 @@ async def main() -> None:
             tool_names = sorted(t.name for t in tools.tools)
             print("tools:", tool_names)
             check(
-                "three tools exposed",
-                tool_names == ["get_menu", "get_order_status", "place_order"],
+                "six tools exposed",
+                tool_names
+                == [
+                    "get_menu",
+                    "get_order_status",
+                    "get_recommendations",
+                    "order_regular",
+                    "place_order",
+                    "save_regular",
+                ],
                 str(tool_names),
             )
 
@@ -122,6 +130,89 @@ async def main() -> None:
             )
             missing = payload(missing_res)
             check("unknown order rejected", "error" in missing, str(missing))
+
+            # 6. save_regular: Liam's usual = 1x queso 8oz + 1x guac 4oz
+            reg_res = await session.call_tool(
+                "save_regular",
+                {
+                    "items": [
+                        {"item_id": "queso-8oz", "quantity": 1},
+                        {"item_id": "guac-4oz", "quantity": 1},
+                    ],
+                    "customer_name": "Liam",
+                    "customer_phone": "8655550199",
+                },
+            )
+            reg = payload(reg_res)
+            check("no error on save_regular", "error" not in reg, str(reg))
+            check(
+                "regular total is $11.00",
+                reg["total_cents"] == 1100,
+                reg.get("total"),
+            )
+            check("regular has 2 lines", len(reg["regular"]) == 2)
+
+            # 7. order_regular replays the saved regular as a new order
+            reorder_res = await session.call_tool(
+                "order_regular",
+                {
+                    "customer_name": "Liam",
+                    "customer_phone": "8655550199",
+                },
+            )
+            reorder = payload(reorder_res)
+            check(
+                "no error on order_regular", "error" not in reorder, str(reorder)
+            )
+            check(
+                "regular order total $11.00",
+                reorder["total_cents"] == 1100,
+                reorder["total"],
+            )
+            check(
+                "regular order starts received",
+                reorder["status"] == "received",
+            )
+            check(
+                "from_regular flagged",
+                reorder.get("from_regular") is True,
+            )
+            check(
+                "regular order is a new order",
+                reorder["order_id"] != order_id,
+                reorder["order_id"],
+            )
+
+            # 8. order_regular with no saved regular errors cleanly
+            noreg_res = await session.call_tool(
+                "order_regular",
+                {
+                    "customer_name": "Nobody",
+                    "customer_phone": "8655550000",
+                },
+            )
+            noreg = payload(noreg_res)
+            check(
+                "no regular -> clean error",
+                "error" in noreg,
+                str(noreg),
+            )
+
+            # 9. save_regular rejects unknown items like place_order
+            badreg_res = await session.call_tool(
+                "save_regular",
+                {
+                    "items": [{"item_id": "not-a-taco", "quantity": 1}],
+                    "customer_name": "X",
+                    "customer_phone": "8655550100",
+                },
+            )
+            badreg = payload(badreg_res)
+            check(
+                "save_regular validates items",
+                "error" in badreg,
+                str(badreg),
+            )
 
     # 6. advance_status demo helper (direct db layer)
     sys.path.insert(0, PROJECT_DIR)
